@@ -7,7 +7,7 @@ import (
   "golang.org/x/term"
   "os"
   "os/signal"
-  "syscall"
+ // "syscall"
 )
 
 func readInputUnix() func() (string, error) {
