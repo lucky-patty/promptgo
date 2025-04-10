@@ -7,6 +7,8 @@ import (
   "os"
   "os/signal"
   "syscall"
+
+  "github.com/lucky-patty/promptgo/style"
 )
 
 func warnIfWindows() {
@@ -16,11 +18,8 @@ func warnIfWindows() {
   }
 }
 
-func Run(prompt string, options []string) (string, error) {
-  if runtime.GOOS == "windows" {
-    return "", fmt.Errorf("Windows is not yet supported in this version")
-  }
- 
+func UnixRun(prompt string, options []string) (string, error) {
+  
   // Try raw mode here
   fd := int(os.Stdin.Fd())
   oldState, err := term.MakeRaw(fd)
@@ -29,6 +28,8 @@ func Run(prompt string, options []string) (string, error) {
   }
   // Restore terminal
   defer term.Restore(fd, oldState)
+
+  theme := style.Current
 
   // Restore on SIGINT
   sigs := make(chan os.Signal, 1)
@@ -41,18 +42,20 @@ func Run(prompt string, options []string) (string, error) {
     os.Exit(0)
   }()
 
+  
   cursor := 0
   read := readInputUnix()
   
   render := func() {
-  os.Stdout.Write([]byte("\x1b[2J")) // Clear screen 
-  os.Stdout.Write([]byte("\x1b[H")) // Move cursor to 0,0
-	os.Stdout.Write([]byte(prompt + "\r\n")) // Finally \r\n is the key to glory
-  for i, opt := range options {
+    os.Stdout.Write([]byte("\x1b[2J")) // Clear screen 
+    os.Stdout.Write([]byte("\x1b[H")) // Move cursor to 0,0
+    // \r\n is the key since \n can cause error
+    os.Stdout.Write([]byte(theme.Prompt + prompt + theme.Reset + "\r\n"))
+    for i, opt := range options {
       if i == cursor {
-        os.Stdout.Write([]byte("\x1b[7m> " + opt + "\x1b[0m\r\n"))
+        os.Stdout.Write([]byte(theme.Selected + "> " + opt + theme.Reset + "\r\n"))
       } else {
-        os.Stdout.Write([]byte("  " + opt + "\r\n"))
+        os.Stdout.Write([]byte(theme.Unselected + opt + theme.Reset + "\r\n"))
       }
     }
   }
@@ -79,4 +82,11 @@ func Run(prompt string, options []string) (string, error) {
     }
     render()
   }
+}
+
+func Run(prompt string, options []string) (string, error) {
+  if runtime.GOOS == "windows" {
+    return "", fmt.Errorf("Windows is not yet supported in this version")
+  }
+  return UnixRun(prompt, options) 
 }
