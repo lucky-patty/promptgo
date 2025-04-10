@@ -5,5 +5,5 @@ import (
 )
 
 func Select(prompt string, options []string) (string, error) {
-  return select.Run(prompt, options)
+  return selector.Run(prompt, options)
 }

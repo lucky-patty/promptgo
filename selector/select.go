@@ -3,6 +3,10 @@ package selector
 import (
   "fmt"
   "runtime"
+  "golang.org/x/term"
+  "os"
+  "os/signal"
+  "syscall"
 )
 
 func warnIfWindows() {
@@ -16,17 +20,39 @@ func Run(prompt string, options []string) (string, error) {
   if runtime.GOOS == "windows" {
     return "", fmt.Errorf("Windows is not yet supported in this version")
   }
+ 
+  // Try raw mode here
+  fd := int(os.Stdin.Fd())
+  oldState, err := term.MakeRaw(fd)
+  if err != nil {
+    panic(err)
+  }
+  // Restore terminal
+  defer term.Restore(fd, oldState)
+
+  // Restore on SIGINT
+  sigs := make(chan os.Signal, 1)
+  signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
+  go func() {
+    <-sigs
+    term.Restore(fd, oldState)
+    os.Stdout.Write([]byte("\x1b[0m\r\n")) // Reset style, newline cleanly
+    fmt.Println("\n🛑 Exit with Ctrl+C — terminal restored.")
+    os.Exit(0)
+  }()
+
   cursor := 0
   read := readInputUnix()
   
   render := func() {
-    fmt.Print("\x1b[2J\x1b[H") // clear screen 
-    fmt.Println(prompt)
-    for i, opt := range options {
+  os.Stdout.Write([]byte("\x1b[2J")) // Clear screen 
+  os.Stdout.Write([]byte("\x1b[H")) // Move cursor to 0,0
+	os.Stdout.Write([]byte(prompt + "\r\n")) // Finally \r\n is the key to glory
+  for i, opt := range options {
       if i == cursor {
-        fmt.Printf("\x1b[7m> %s\x1b[0m\n", opt)
+        os.Stdout.Write([]byte("\x1b[7m> " + opt + "\x1b[0m\r\n"))
       } else {
-        fmt.Println(" " + opt)
+        os.Stdout.Write([]byte("  " + opt + "\r\n"))
       }
     }
   }
@@ -46,6 +72,10 @@ func Run(prompt string, options []string) (string, error) {
       }
     case "enter":
       return options[cursor], nil
+    case "exit":
+      term.Restore(fd, oldState)
+      fmt.Fprintln(os.Stderr, "👋 User exited with Ctrl+C")
+      os.Exit(0)
     }
     render()
   }
