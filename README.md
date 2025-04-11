@@ -1,3 +1,4 @@
+[![Go Reference](https://pkg.go.dev/badge/github.com/lucky-patty/promptgo.svg)](https://pkg.go.dev/github.com/lucky-patty/promptgo)
 # Promptgo 
 This is prompt-ui for golang. 
 I will add more feature and test in the future including fixing the original package bugs.
