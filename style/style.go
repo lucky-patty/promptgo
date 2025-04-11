@@ -2,7 +2,6 @@ package style
 
 import "runtime"
 
-
 type Theme struct {
   Prompt string
   Selected string

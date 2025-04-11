@@ -17,9 +17,11 @@ func warnIfWindows() {
 		fmt.Println("👉  Recommended: use Windows Terminal, WSL, or Git Bash for best experience.")
   }
 }
+func UnixRunReader(prompt string, options []string, customInput func() (string, error)) (string, error) {
+  return runWithInput(prompt, options, customInput)
+}
 
 func UnixRun(prompt string, options []string) (string, error) {
-  
   // Try raw mode here
   fd := int(os.Stdin.Fd())
   oldState, err := term.MakeRaw(fd)

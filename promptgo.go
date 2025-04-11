@@ -7,3 +7,4 @@ import (
 func Select(prompt string, options []string) (string, error) {
   return selector.Run(prompt, options)
 }
+
